@@ -11,6 +11,9 @@ set(PROJECT_VERSION_MINOR 2)
 set(PROJECT_VERSION_PATCH 1)
 set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
 
+# Add CPM
+include(cmake/CPM.cmake)
+
 # Build a shared library by default
 option(BUILD_SHARED_LIBS "Build QMdnsEngine as a shared library" ON)
 

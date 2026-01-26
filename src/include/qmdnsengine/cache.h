@@ -28,6 +28,8 @@
 #include <QList>
 #include <QObject>
 
+#include <uvw/emitter.h>
+
 #include "qmdnsengine_export.h"
 
 namespace QMdnsEngine
@@ -36,6 +38,25 @@ namespace QMdnsEngine
 class Record;
 
 class QMDNSENGINE_EXPORT CachePrivate;
+
+/**
+ * @brief Indicate that a record will expire soon and a new query should be issued
+ * @param record reference to the record that will soon expire
+ *
+ * This signal is emitted when a record reaches approximately 50%, 85%,
+ * 90%, and 95% of its lifetime.
+ */
+struct ShouldQuery {
+    const Record& record;
+};
+
+/**
+ * @brief Indicate that the specified record expired
+ * @param record reference to the record that has expired
+ */
+struct RecordExpired {
+    const Record& record;
+};
 
 /**
  * @brief %Cache for DNS records
@@ -62,16 +83,13 @@ class QMDNSENGINE_EXPORT CachePrivate;
  *
  * Alternatively, lookupRecord() can be used to find a single record.
  */
-class QMDNSENGINE_EXPORT Cache : public QObject
-{
-    Q_OBJECT
-
+class QMDNSENGINE_EXPORT Cache : public uvw::emitter<Cache, ShouldQuery, RecordExpired> {
 public:
 
     /**
      * @brief Create an empty cache.
      */
-    explicit Cache(QObject *parent = 0);
+    Cache();
 
     /**
      * @brief Add a record to the cache
@@ -105,25 +123,8 @@ public:
      */
     bool lookupRecords(const QByteArray &name, quint16 type, QList<Record> &records) const;
 
-Q_SIGNALS:
-
-    /**
-     * @brief Indicate that a record will expire soon and a new query should be issued
-     * @param record reference to the record that will soon expire
-     *
-     * This signal is emitted when a record reaches approximately 50%, 85%,
-     * 90%, and 95% of its lifetime.
-     */
-    void shouldQuery(const Record &record);
-
-    /**
-     * @brief Indicate that the specified record expired
-     * @param record reference to the record that has expired
-     */
-    void recordExpired(const Record &record);
-
 private:
-
+    friend class CachePrivate;
     CachePrivate *const d;
 };
 

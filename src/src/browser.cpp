@@ -41,12 +41,17 @@ BrowserPrivate::BrowserPrivate(Browser *browser, AbstractServer *server, const Q
     : QObject(browser),
       server(server),
       type(type),
-      cache(existingCache ? existingCache : new Cache(this)),
+      cache(existingCache ? existingCache : new Cache()),
       q(browser)
 {
     connect(server, &AbstractServer::messageReceived, this, &BrowserPrivate::onMessageReceived);
-    connect(cache, &Cache::shouldQuery, this, &BrowserPrivate::onShouldQuery);
-    connect(cache, &Cache::recordExpired, this, &BrowserPrivate::onRecordExpired);
+    cache->on<ShouldQuery>([this](const ShouldQuery& event, const Cache&) {
+        onShouldQuery(event.record);
+    });
+    cache->on<RecordExpired>([this](const RecordExpired& event, const Cache&) {
+        onRecordExpired(event.record);
+    });
+
     connect(&queryTimer, &QTimer::timeout, this, &BrowserPrivate::onQueryTimeout);
     connect(&serviceTimer, &QTimer::timeout, this, &BrowserPrivate::onServiceTimeout);
 

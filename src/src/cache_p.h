@@ -37,10 +37,8 @@ namespace QMdnsEngine
 
 class Cache;
 
-class CachePrivate : public QObject
+class CachePrivate
 {
-    Q_OBJECT
-
 public:
 
     struct Entry
@@ -55,11 +53,8 @@ public:
     QList<Entry> entries;
     QDateTime nextTrigger;
 
-private Q_SLOTS:
-
-    void onTimeout();
-
 private:
+    void onTimeout();
 
     Cache *const q;
 };

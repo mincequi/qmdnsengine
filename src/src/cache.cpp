@@ -36,11 +36,11 @@
 using namespace QMdnsEngine;
 
 CachePrivate::CachePrivate(Cache *cache)
-    : QObject(cache),
-      q(cache)
+    : q(cache)
 {
-    connect(&timer, &QTimer::timeout, this, &CachePrivate::onTimeout);
-
+    timer.callOnTimeout([this] {
+        onTimeout();
+    });
     timer.setSingleShot(true);
 }
 
@@ -73,11 +73,11 @@ void CachePrivate::onTimeout()
                 newNextTrigger = i->triggers.at(0);
             }
             if (shouldQuery) {
-                emit q->shouldQuery(i->record);
+                q->publish(ShouldQuery{i->record});
             }
             ++i;
         } else {
-            emit q->recordExpired(i->record);
+            q->publish(RecordExpired{i->record});
             i = entries.erase(i);
         }
     }
@@ -90,10 +90,8 @@ void CachePrivate::onTimeout()
     }
 }
 
-Cache::Cache(QObject *parent)
-    : QObject(parent),
-      d(new CachePrivate(this))
-{
+Cache::Cache()
+    : d(new CachePrivate(this)) {
 }
 
 void Cache::addRecord(const Record &record)
@@ -108,7 +106,7 @@ void Cache::addRecord(const Record &record)
 
             // If the TTL is set to 0, indicate that the record was removed
             if (record.ttl() == 0) {
-                emit recordExpired((*i).record);
+                publish(RecordExpired{(*i).record});
             }
 
             i = d->entries.erase(i);

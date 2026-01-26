@@ -1,3 +1,7 @@
+# Dependencies
+set(BUILD_UVW_LIBS ON)
+CPMAddPackage(gh:skypjack/uvw@3.4.0_libuv_v1.48)
+
 configure_file(qmdnsengine_export.h.in "${CMAKE_CURRENT_BINARY_DIR}/qmdnsengine_export.h")
 
 set(HEADERS
@@ -71,7 +75,7 @@ target_include_directories(qmdnsengine PUBLIC
     "$<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>"
 )
 
-target_link_libraries(qmdnsengine Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(qmdnsengine Qt${QT_VERSION_MAJOR}::Network uvw::uvw-static)
 
 install(TARGETS qmdnsengine
     EXPORT        qmdnsengine-export

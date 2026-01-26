@@ -40,7 +40,7 @@ ResolverPrivate::ResolverPrivate(Resolver *resolver, AbstractServer *server, con
     : QObject(resolver),
       server(server),
       name(name),
-      cache(cache ? cache : new Cache(this)),
+      cache(cache ? cache : new Cache()),
       q(resolver)
 {
     connect(server, &AbstractServer::messageReceived, this, &ResolverPrivate::onMessageReceived);
