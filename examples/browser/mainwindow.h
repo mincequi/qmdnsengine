@@ -55,10 +55,10 @@ private Q_SLOTS:
 
 private:
 
-    QMdnsEngine::Server mServer;
+    QMdnsEngine::Server _server;
     ServiceModel *mServiceModel;
 
-    QLineEdit *mServiceType;
+    QLineEdit *_serviceType;
     QPushButton *mStartStop;
     QListView *mServices;
     QListWidget *mAddresses;

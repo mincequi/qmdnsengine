@@ -56,8 +56,7 @@ private Q_SLOTS:
     void onReadyRead();
 
 private:
-
-    Server *const q;
+    Server* const q;
 };
 
 }

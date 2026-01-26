@@ -49,7 +49,7 @@ MainWindow::MainWindow()
     setWindowTitle(tr("mDNS Browser"));
     resize(640, 480);
 
-    mServiceType = new QLineEdit(tr("_http._tcp.local."));
+    _serviceType = new QLineEdit(tr("_http._tcp.local."));
     mStartStop = new QPushButton(tr("Browse"));
     mServices = new QListView;
     mAddresses = new QListWidget;
@@ -64,7 +64,7 @@ MainWindow::MainWindow()
     QCheckBox *any = new QCheckBox(tr("Any"));
 
     QHBoxLayout *typeLayout = new QHBoxLayout;
-    typeLayout->addWidget(mServiceType, 1);
+    typeLayout->addWidget(_serviceType, 1);
     typeLayout->addWidget(any);
     typeLayout->addWidget(mStartStop);
     rootLayout->addLayout(typeLayout);
@@ -89,9 +89,9 @@ MainWindow::MainWindow()
 void MainWindow::onToggled(bool checked)
 {
     if (checked) {
-        mServiceType->setText(QMdnsEngine::MdnsBrowseType);
+        _serviceType->setText(QMdnsEngine::MdnsBrowseType);
     }
-    mServiceType->setEnabled(!checked);
+    _serviceType->setEnabled(!checked);
 }
 
 void MainWindow::onClicked()
@@ -103,7 +103,7 @@ void MainWindow::onClicked()
         mAttributes->setColumnCount(0);
     }
 
-    mServiceModel = new ServiceModel(&mServer, mServiceType->text().toUtf8());
+    mServiceModel = new ServiceModel(&_server, _serviceType->text().toUtf8());
     mServices->setModel(mServiceModel);
 
     connect(mServices->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::onSelectionChanged);
@@ -137,7 +137,7 @@ void MainWindow::onSelectionChanged(const QItemSelection &selected, const QItemS
         }
 
         // Resolve the address
-        mResolver = new QMdnsEngine::Resolver(&mServer, service.hostname(), nullptr, this);
+        mResolver = new QMdnsEngine::Resolver(&_server, service.hostname(), nullptr, this);
         connect(mResolver, &QMdnsEngine::Resolver::resolved, [this](const QHostAddress &address) {
             mAddresses->addItem(address.toString());
         });

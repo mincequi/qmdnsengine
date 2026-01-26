@@ -43,7 +43,9 @@ ResolverPrivate::ResolverPrivate(Resolver *resolver, AbstractServer *server, con
       cache(cache ? cache : new Cache()),
       q(resolver)
 {
-    connect(server, &AbstractServer::messageReceived, this, &ResolverPrivate::onMessageReceived);
+    server->on<MessageReceived>([this](const MessageReceived& event, const AbstractServer&) {
+        onMessageReceived(event.message);
+    });
     connect(&timer, &QTimer::timeout, this, &ResolverPrivate::onTimeout);
 
     // Query for new records

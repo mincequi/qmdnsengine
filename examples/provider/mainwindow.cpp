@@ -39,20 +39,20 @@
 #include "mainwindow.h"
 
 MainWindow::MainWindow()
-    : mHostname(&mServer),
-      mProvider(0),
-      mServiceName(new QLineEdit(tr("Test Service"))),
-      mServiceType(new QLineEdit(tr("_test._tcp.local."))),
-      mServicePort(new QLineEdit("1234")),
-      mButton(new QPushButton(buttonCaption())),
-      mShowQueries(new QCheckBox(tr("Show queries"))),
-      mLog(new QTextEdit(tr("Initializing application")))
+    : _hostname(&_server),
+      _provider(0),
+      _serviceName(new QLineEdit(tr("Test Service"))),
+      _serviceType(new QLineEdit(tr("_test._tcp.local."))),
+      _servicePort(new QLineEdit("1234")),
+      _button(new QPushButton(buttonCaption())),
+      _showQueries(new QCheckBox(tr("Show queries"))),
+      _log(new QTextEdit(tr("Initializing application")))
 {
     setWindowTitle(tr("mDNS Provider"));
     resize(640, 480);
 
-    mServicePort->setValidator(new QIntValidator(1, 65535, this));
-    mLog->setReadOnly(true);
+    _servicePort->setValidator(new QIntValidator(1, 65535, this));
+    _log->setReadOnly(true);
 
     // Create the root layout
     QVBoxLayout *rootLayout = new QVBoxLayout;
@@ -67,59 +67,61 @@ MainWindow::MainWindow()
     // Create the grid layout for the line edits
     QGridLayout *gridLayout = new QGridLayout;
     gridLayout->addWidget(new QLabel(tr("Service name:")), 0, 0);
-    gridLayout->addWidget(mServiceName, 0, 1);
+    gridLayout->addWidget(_serviceName, 0, 1);
     gridLayout->addWidget(new QLabel(tr("Service type:")), 1, 0);
-    gridLayout->addWidget(mServiceType, 1, 1);
+    gridLayout->addWidget(_serviceType, 1, 1);
     gridLayout->addWidget(new QLabel(tr("Service port:")), 2, 0);
-    gridLayout->addWidget(mServicePort, 2, 1);
+    gridLayout->addWidget(_servicePort, 2, 1);
     upperLayout->addLayout(gridLayout);
 
     // Create the layout for the buttons
     QVBoxLayout *buttonLayout = new QVBoxLayout;
-    buttonLayout->addWidget(mButton);
-    buttonLayout->addWidget(mShowQueries);
+    buttonLayout->addWidget(_button);
+    buttonLayout->addWidget(_showQueries);
     buttonLayout->addWidget(new QWidget, 1);
     upperLayout->addLayout(buttonLayout);
 
     // Add the log
-    rootLayout->addWidget(mLog, 1);
+    rootLayout->addWidget(_log, 1);
 
-    connect(mButton, &QPushButton::clicked, this, &MainWindow::onClicked);
-    connect(&mHostname, &QMdnsEngine::Hostname::hostnameChanged, this, &MainWindow::onHostnameChanged);
-    connect(&mServer, &QMdnsEngine::Server::messageReceived, this, &MainWindow::onMessageReceived);
+    connect(_button, &QPushButton::clicked, this, &MainWindow::onClicked);
+    connect(&_hostname, &QMdnsEngine::Hostname::hostnameChanged, this, &MainWindow::onHostnameChanged);
+    _server.on<QMdnsEngine::MessageReceived>([this](const QMdnsEngine::MessageReceived& event, const QMdnsEngine::AbstractServer&) {
+        onMessageReceived(event.message);
+    });
 }
 
 void MainWindow::onClicked()
 {
-    if (mProvider) {
-        mLog->append(tr("Destroying provider"));
-        delete mProvider;
-        mProvider = 0;
+    if (_provider) {
+        _log->append(tr("Destroying provider"));
+        delete _provider;
+        _provider = 0;
     } else {
-        mLog->append(tr("Creating provider"));
+        _log->append(tr("Creating provider"));
         QMdnsEngine::Service service;
-        service.setName(mServiceName->text().toUtf8());
-        service.setType(mServiceType->text().toUtf8());
-        service.setPort(mServicePort->text().toUShort());
-        mProvider = new QMdnsEngine::Provider(&mServer, &mHostname, this);
-        mProvider->update(service);
+        service.setName(_serviceName->text().toUtf8());
+        service.setType(_serviceType->text().toUtf8());
+        service.setPort(_servicePort->text().toUShort());
+        _provider = new QMdnsEngine::Provider(&_server, &_hostname, this);
+        _provider->update(service);
     }
-    mButton->setText(buttonCaption());
+    _button->setText(buttonCaption());
 }
 
 void MainWindow::onHostnameChanged(const QByteArray &hostname)
 {
-    mLog->append(tr("Hostname changed to %1").arg(QString(hostname)));
+    _log->append(tr("Hostname changed to %1").arg(QString(hostname)));
 }
 
 void MainWindow::onMessageReceived(const QMdnsEngine::Message &message)
 {
-    if (!mShowQueries->isChecked()) {
+    if (!_showQueries->isChecked()) {
         return;
     }
     const auto queries = message.queries();
     for (const QMdnsEngine::Query &query : queries) {
-        mLog->append(
+        _log->append(
             tr("[%1] %2")
                 .arg(QMdnsEngine::typeName(query.type()))
                 .arg(QString(query.name()))
@@ -129,5 +131,5 @@ void MainWindow::onMessageReceived(const QMdnsEngine::Message &message)
 
 QString MainWindow::buttonCaption() const
 {
-    return mProvider ? tr("Stop") : tr("Start");
+    return _provider ? tr("Stop") : tr("Start");
 }

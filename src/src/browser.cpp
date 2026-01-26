@@ -43,8 +43,8 @@ BrowserPrivate::BrowserPrivate(Browser *browser, AbstractServer *server, const Q
       cache(existingCache ? existingCache : new Cache()),
       q(browser)
 {
-    QObject::connect(server, &AbstractServer::messageReceived, [this](const Message& message) {
-        onMessageReceived(message);
+    server->on<MessageReceived>([this](const MessageReceived& event, const AbstractServer&) {
+        onMessageReceived(event.message);
     });
     cache->on<ShouldQuery>([this](const ShouldQuery& event, const Cache&) {
         onShouldQuery(event.record);

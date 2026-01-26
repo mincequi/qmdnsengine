@@ -55,18 +55,18 @@ private:
 
     QString buttonCaption() const;
 
-    QMdnsEngine::Server mServer;
-    QMdnsEngine::Hostname mHostname;
-    QMdnsEngine::Provider *mProvider;
+    QMdnsEngine::Server _server;
+    QMdnsEngine::Hostname _hostname;
+    QMdnsEngine::Provider* _provider;
 
-    QLineEdit *mServiceName;
-    QLineEdit *mServiceType;
-    QLineEdit *mServicePort;
+    QLineEdit* _serviceName;
+    QLineEdit* _serviceType;
+    QLineEdit* _servicePort;
 
-    QPushButton *mButton;
-    QCheckBox *mShowQueries;
+    QPushButton* _button;
+    QCheckBox* _showQueries;
 
-    QTextEdit *mLog;
+    QTextEdit* _log;
 };
 
 #endif // MAINWINDOW_H

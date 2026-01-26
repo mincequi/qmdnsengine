@@ -47,16 +47,13 @@ class QMDNSENGINE_EXPORT ServerPrivate;
  * interfaces, automatically joining multicast groups when new interfaces are
  * available.
  */
-class QMDNSENGINE_EXPORT Server : public AbstractServer
-{
-    Q_OBJECT
-
+class QMDNSENGINE_EXPORT Server : public AbstractServer {
 public:
 
     /**
      * @brief Create a new server
      */
-    explicit Server(QObject *parent = 0);
+    Server();
 
     /**
      * @brief Implementation of AbstractServer::sendMessage()
@@ -69,8 +66,8 @@ public:
     virtual void sendMessageToAll(const Message &message);
 
 private:
-
-    ServerPrivate *const d;
+    friend class ServerPrivate;
+    ServerPrivate* const d;
 };
 
 }

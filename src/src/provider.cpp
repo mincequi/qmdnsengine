@@ -43,7 +43,9 @@ ProviderPrivate::ProviderPrivate(QObject *parent, AbstractServer *server, Hostna
       initialized(false),
       confirmed(false)
 {
-    connect(server, &AbstractServer::messageReceived, this, &ProviderPrivate::onMessageReceived);
+    server->on<MessageReceived>([this](const MessageReceived& event, const AbstractServer&) {
+        onMessageReceived(event.message);
+    });
     connect(hostname, &Hostname::hostnameChanged, this, &ProviderPrivate::onHostnameChanged);
 
     browsePtrProposed.setName(MdnsBrowseType);

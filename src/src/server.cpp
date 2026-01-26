@@ -43,8 +43,7 @@
 using namespace QMdnsEngine;
 
 ServerPrivate::ServerPrivate(Server *server)
-    : QObject(server),
-      q(server)
+    : q(server)
 {
     connect(&timer, &QTimer::timeout, this, &ServerPrivate::onTimeout);
     connect(&ipv4Socket, &QUdpSocket::readyRead, this, &ServerPrivate::onReadyRead);
@@ -71,12 +70,12 @@ bool ServerPrivate::bindSocket(QUdpSocket &socket, const QHostAddress &address)
         int arg = 1;
         if (setsockopt(socket.socketDescriptor(), SOL_SOCKET, SO_REUSEADDR,
                 reinterpret_cast<char*>(&arg), sizeof(int))) {
-            emit q->error(strerror(errno));
+            q->publish(Error{strerror(errno)});
             return false;
         }
 #endif
         if (!socket.bind(address, MdnsPort, QAbstractSocket::ReuseAddressHint)) {
-            emit q->error(socket.errorString());
+            q->publish(Error{socket.errorString()});
             return false;
         }
 #ifdef Q_OS_UNIX
@@ -129,13 +128,12 @@ void ServerPrivate::onReadyRead()
     if (fromPacket(packet, message)) {
         message.setAddress(address);
         message.setPort(port);
-        emit q->messageReceived(message);
+        q->publish(MessageReceived{message});
     }
 }
 
-Server::Server(QObject *parent)
-    : AbstractServer(parent),
-      d(new ServerPrivate(this))
+Server::Server()
+    : d(new ServerPrivate(this))
 {
 }
 

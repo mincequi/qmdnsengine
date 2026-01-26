@@ -45,7 +45,9 @@ ProberPrivate::ProberPrivate(Prober *prober, AbstractServer *server, const Recor
     name = record.name().left(index);
     type = record.name().mid(index);
 
-    connect(server, &AbstractServer::messageReceived, this, &ProberPrivate::onMessageReceived);
+    server->on<MessageReceived>([this](const MessageReceived& event, const AbstractServer&) {
+        onMessageReceived(event.message);
+    });
     connect(&timer, &QTimer::timeout, this, &ProberPrivate::onTimeout);
 
     timer.setSingleShot(true);

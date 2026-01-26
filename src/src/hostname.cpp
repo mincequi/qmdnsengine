@@ -41,9 +41,12 @@ using namespace QMdnsEngine;
 HostnamePrivate::HostnamePrivate(Hostname *hostname, AbstractServer *server)
     : QObject(hostname),
       server(server),
-      q(hostname)
-{
-    connect(server, &AbstractServer::messageReceived, this, &HostnamePrivate::onMessageReceived);
+      q(hostname) {
+
+    server->on<MessageReceived>([this](const MessageReceived& event, const AbstractServer&) {
+        onMessageReceived(event.message);
+    });
+
     connect(&registrationTimer, &QTimer::timeout, this, &HostnamePrivate::onRegistrationTimeout);
     connect(&rebroadcastTimer, &QTimer::timeout, this, &HostnamePrivate::onRebroadcastTimeout);
 

@@ -27,12 +27,26 @@
 
 #include <QObject>
 
+#include <uvw/emitter.h>
+
 #include "qmdnsengine_export.h"
 
 namespace QMdnsEngine
 {
 
 class Message;
+
+/**
+ * @brief Indicate that a DNS message was received
+ * @param message newly received message
+ */
+struct MessageReceived { const Message& message; };
+
+/**
+ * @brief Indicate that an error has occurred
+ * @param message brief description of the error
+ */
+struct Error { const QString& message; };
 
 /**
  * @brief Base class for sending and receiving DNS messages
@@ -42,16 +56,13 @@ class Message;
  * easier to test. Any class derived from this one that implements the pure
  * virtual methods can be used for sending and receiving DNS messages.
  */
-class QMDNSENGINE_EXPORT AbstractServer : public QObject
-{
-    Q_OBJECT
-
+class QMDNSENGINE_EXPORT AbstractServer : public uvw::emitter<AbstractServer, MessageReceived, Error> {
 public:
 
     /**
      * @brief Abstract constructor
      */
-    explicit AbstractServer(QObject *parent = 0);
+    explicit AbstractServer();
 
     /**
      * @brief Send a message to its provided destination
@@ -67,20 +78,6 @@ public:
      * The message should be sent over both IPv4 and IPv6 on all interfaces.
      */
     virtual void sendMessageToAll(const Message &message) = 0;
-
-Q_SIGNALS:
-
-    /**
-     * @brief Indicate that a DNS message was received
-     * @param message newly received message
-     */
-    void messageReceived(const Message &message);
-
-    /**
-     * @brief Indicate that an error has occurred
-     * @param message brief description of the error
-     */
-    void error(const QString &message);
 };
 
 }
