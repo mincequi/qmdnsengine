@@ -42,12 +42,8 @@ class Cache;
 class Message;
 class Record;
 
-class BrowserPrivate : public QObject
-{
-    Q_OBJECT
-
+class BrowserPrivate {
 public:
-
     explicit BrowserPrivate(Browser *browser, AbstractServer *server, const QByteArray &type, Cache *existingCache);
 
     bool updateService(const QByteArray &fqName);
@@ -63,8 +59,7 @@ public:
     QTimer queryTimer;
     QTimer serviceTimer;
 
-private Q_SLOTS:
-
+private:
     void onMessageReceived(const Message &message);
     void onShouldQuery(const Record &record);
     void onRecordExpired(const Record &record);
@@ -72,7 +67,6 @@ private Q_SLOTS:
     void onQueryTimeout();
     void onServiceTimeout();
 
-private:
     void updateHostnames();
 
     Browser *const q;

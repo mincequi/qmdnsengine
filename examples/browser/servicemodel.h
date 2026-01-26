@@ -54,9 +54,9 @@ private:
 
     int findService(const QByteArray &name);
 
-    QMdnsEngine::Cache cache;
-    QMdnsEngine::Browser mBrowser;
-    QList<QMdnsEngine::Service> mServices;
+    QMdnsEngine::Cache _cache;
+    QMdnsEngine::Browser _browser;
+    QList<QMdnsEngine::Service> _services;
 };
 
 #endif // SERVICEMODEL_H

@@ -38,13 +38,14 @@
 using namespace QMdnsEngine;
 
 BrowserPrivate::BrowserPrivate(Browser *browser, AbstractServer *server, const QByteArray &type, Cache *existingCache)
-    : QObject(browser),
-      server(server),
+    : server(server),
       type(type),
       cache(existingCache ? existingCache : new Cache()),
       q(browser)
 {
-    connect(server, &AbstractServer::messageReceived, this, &BrowserPrivate::onMessageReceived);
+    QObject::connect(server, &AbstractServer::messageReceived, [this](const Message& message) {
+        onMessageReceived(message);
+    });
     cache->on<ShouldQuery>([this](const ShouldQuery& event, const Cache&) {
         onShouldQuery(event.record);
     });
@@ -52,8 +53,12 @@ BrowserPrivate::BrowserPrivate(Browser *browser, AbstractServer *server, const Q
         onRecordExpired(event.record);
     });
 
-    connect(&queryTimer, &QTimer::timeout, this, &BrowserPrivate::onQueryTimeout);
-    connect(&serviceTimer, &QTimer::timeout, this, &BrowserPrivate::onServiceTimeout);
+    queryTimer.callOnTimeout([this] {
+        onQueryTimeout();
+    });
+    serviceTimer.callOnTimeout([this] {
+        onServiceTimeout();
+    });
 
     queryTimer.setInterval(60 * 1000);
     queryTimer.setSingleShot(true);
@@ -112,9 +117,9 @@ bool BrowserPrivate::updateService(const QByteArray &fqName)
     // If the service existed, this is an update; otherwise it is a new
     // addition; emit the appropriate signal
     if (!services.contains(fqName)) {
-        emit q->serviceAdded(service);
+        q->publish(ServiceAdded{service});
     } else if(services.value(fqName) != service) {
-        emit q->serviceUpdated(service);
+        q->publish(ServiceUpdated{service});
     }
 
     services.insert(fqName, service);
@@ -240,7 +245,7 @@ void BrowserPrivate::onRecordExpired(const Record &record)
     }
     Service service = services.value(serviceName);
     if (!service.name().isNull()) {
-        emit q->serviceRemoved(service);
+        q->publish(ServiceRemoved{service});
         services.remove(serviceName);
         updateHostnames();
     }
@@ -314,8 +319,7 @@ void BrowserPrivate::updateHostnames()
     }
 }
 
-Browser::Browser(AbstractServer *server, const QByteArray &type, Cache *cache, QObject *parent)
-    : QObject(parent),
-      d(new BrowserPrivate(this, server, type, cache))
+Browser::Browser(AbstractServer *server, const QByteArray &type, Cache *cache)
+    : d(new BrowserPrivate(this, server, type, cache))
 {
 }

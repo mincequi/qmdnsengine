@@ -27,26 +27,32 @@
 Q_DECLARE_METATYPE(QMdnsEngine::Service)
 
 ServiceModel::ServiceModel(QMdnsEngine::Server *server, const QByteArray &type)
-    : mBrowser(server, type, &cache)
+    : _browser(server, type, &_cache)
 {
-    connect(&mBrowser, &QMdnsEngine::Browser::serviceAdded, this, &ServiceModel::onServiceAdded);
-    connect(&mBrowser, &QMdnsEngine::Browser::serviceUpdated, this, &ServiceModel::onServiceUpdated);
-    connect(&mBrowser, &QMdnsEngine::Browser::serviceRemoved, this, &ServiceModel::onServiceRemoved);
+    _browser.on<QMdnsEngine::ServiceAdded>([this](const QMdnsEngine::ServiceAdded& event, const QMdnsEngine::Browser&) {
+        onServiceAdded(event.service);
+    });
+    _browser.on<QMdnsEngine::ServiceUpdated>([this](const QMdnsEngine::ServiceUpdated& event, const QMdnsEngine::Browser&) {
+        onServiceUpdated(event.service);
+    });
+    _browser.on<QMdnsEngine::ServiceRemoved>([this](const QMdnsEngine::ServiceRemoved& event, const QMdnsEngine::Browser&) {
+        onServiceRemoved(event.service);
+    });
 }
 
 int ServiceModel::rowCount(const QModelIndex &) const
 {
-    return mServices.count();
+    return _services.count();
 }
 
 QVariant ServiceModel::data(const QModelIndex &index, int role) const
 {
     // Ensure the index points to a valid row
-    if (!index.isValid() || index.row() < 0 || index.row() >= mServices.count()) {
+    if (!index.isValid() || index.row() < 0 || index.row() >= _services.count()) {
         return QVariant();
     }
 
-    QMdnsEngine::Service service = mServices.at(index.row());
+    QMdnsEngine::Service service = _services.at(index.row());
 
     switch (role) {
     case Qt::DisplayRole:
@@ -62,8 +68,8 @@ QVariant ServiceModel::data(const QModelIndex &index, int role) const
 
 void ServiceModel::onServiceAdded(const QMdnsEngine::Service &service)
 {
-    beginInsertRows(QModelIndex(), mServices.count(), mServices.count());
-    mServices.append(service);
+    beginInsertRows(QModelIndex(), _services.count(), _services.count());
+    _services.append(service);
     endInsertRows();
 }
 
@@ -71,7 +77,7 @@ void ServiceModel::onServiceUpdated(const QMdnsEngine::Service &service)
 {
     int i = findService(service.name());
     if (i != -1) {
-        mServices.replace(i, service);
+        _services.replace(i, service);
         emit dataChanged(index(i), index(i));
     }
 }
@@ -81,16 +87,16 @@ void ServiceModel::onServiceRemoved(const QMdnsEngine::Service &service)
     int i = findService(service.name());
     if (i != -1) {
         beginRemoveRows(QModelIndex(), i, i);
-        mServices.removeAt(i);
+        _services.removeAt(i);
         endRemoveRows();
     }
 }
 
 int ServiceModel::findService(const QByteArray &name)
 {
-    for (auto i = mServices.constBegin(); i != mServices.constEnd(); ++i) {
+    for (auto i = _services.constBegin(); i != _services.constEnd(); ++i) {
         if ((*i).name() == name) {
-            return i - mServices.constBegin();
+            return i - _services.constBegin();
         }
     }
     return -1;

@@ -28,6 +28,8 @@
 #include <QByteArray>
 #include <QObject>
 
+#include <uvw/emitter.h>
+
 #include "qmdnsengine_export.h"
 
 namespace QMdnsEngine
@@ -38,6 +40,32 @@ class Cache;
 class Service;
 
 class QMDNSENGINE_EXPORT BrowserPrivate;
+
+/**
+ * @brief Indicate that a new service has been added
+ *
+ * This signal is emitted when the PTR and SRV records for a service are
+ * received. If TXT records are received later, the serviceUpdated()
+ * signal will be emitted.
+ */
+struct ServiceAdded { const Service& service; };
+
+/**
+ * @brief Indicate that the specified service was updated
+ *
+ * This signal is emitted when the SRV record for a service (identified by
+ * its name and type) or a TXT record has changed.
+ */
+struct ServiceUpdated { const Service& service; };
+
+/**
+ * @brief Indicate that the specified service was removed
+ *
+ * This signal is emitted when an essential record (PTR or SRV) is
+ * expiring from the cache. This will also occur when an updated PTR or
+ * SRV record is received with a TTL of 0.
+ */
+struct ServiceRemoved { const Service& service; };
 
 /**
  * @brief %Browser for local services
@@ -69,10 +97,7 @@ class QMDNSENGINE_EXPORT BrowserPrivate;
  * The serviceUpdated() and serviceRemoved() signals are emitted when services
  * are updated (their properties change) or are removed, respectively.
  */
-class QMDNSENGINE_EXPORT Browser : public QObject
-{
-    Q_OBJECT
-
+class QMDNSENGINE_EXPORT Browser : public uvw::emitter<Browser, ServiceAdded, ServiceUpdated, ServiceRemoved> {
 public:
 
     /**
@@ -80,40 +105,11 @@ public:
      * @param server server to use for receiving and sending mDNS messages
      * @param type service type to browse for
      * @param cache DNS cache to use or null to create one
-     * @param parent QObject
      */
-    Browser(AbstractServer *server, const QByteArray &type, Cache *cache = 0, QObject *parent = 0);
-
-Q_SIGNALS:
-
-    /**
-     * @brief Indicate that a new service has been added
-     *
-     * This signal is emitted when the PTR and SRV records for a service are
-     * received. If TXT records are received later, the serviceUpdated()
-     * signal will be emitted.
-     */
-    void serviceAdded(const Service &service);
-
-    /**
-     * @brief Indicate that the specified service was updated
-     *
-     * This signal is emitted when the SRV record for a service (identified by
-     * its name and type) or a TXT record has changed.
-     */
-    void serviceUpdated(const Service &service);
-
-    /**
-     * @brief Indicate that the specified service was removed
-     *
-     * This signal is emitted when an essential record (PTR or SRV) is
-     * expiring from the cache. This will also occur when an updated PTR or
-     * SRV record is received with a TTL of 0.
-     */
-    void serviceRemoved(const Service &service);
+    Browser(AbstractServer *server, const QByteArray &type, Cache *cache = 0);
 
 private:
-
+    friend class BrowserPrivate;
     BrowserPrivate *const d;
 };
 
