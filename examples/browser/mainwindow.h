@@ -36,6 +36,7 @@ class QListView;
 class QListWidget;
 class QPushButton;
 class QTableWidget;
+class QTextEdit;
 
 class ServiceModel;
 
@@ -54,17 +55,17 @@ private Q_SLOTS:
     void onSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 
 private:
-
     QMdnsEngine::Server _server;
-    ServiceModel *mServiceModel;
+    ServiceModel* _serviceModel = nullptr;
 
     QLineEdit *_serviceType;
     QPushButton *mStartStop;
     QListView *mServices;
     QListWidget *mAddresses;
     QTableWidget *mAttributes;
+    QTextEdit* _log;
 
-    QMdnsEngine::Resolver *mResolver;
+    QMdnsEngine::Resolver* _resolver = nullptr;
 };
 
 #endif // MAINWINDOW_H

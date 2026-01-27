@@ -37,9 +37,9 @@
 
 using namespace QMdnsEngine;
 
-BrowserPrivate::BrowserPrivate(Browser *browser, AbstractServer *server, const QByteArray &type, Cache *existingCache)
+BrowserPrivate::BrowserPrivate(Browser *browser, AbstractServer *server, const QByteArray& serviceType, Cache *existingCache)
     : server(server),
-      type(type),
+      _serviceType(serviceType),
       cache(existingCache ? existingCache : new Cache()),
       q(browser)
 {
@@ -56,15 +56,9 @@ BrowserPrivate::BrowserPrivate(Browser *browser, AbstractServer *server, const Q
     queryTimer.callOnTimeout([this] {
         onQueryTimeout();
     });
-    serviceTimer.callOnTimeout([this] {
-        onServiceTimeout();
-    });
 
     queryTimer.setInterval(60 * 1000);
     queryTimer.setSingleShot(true);
-
-    serviceTimer.setInterval(100);
-    serviceTimer.setSingleShot(true);
 
     // Immediately begin browsing for services
     onQueryTimeout();
@@ -116,25 +110,22 @@ bool BrowserPrivate::updateService(const QByteArray &fqName)
 
     // If the service existed, this is an update; otherwise it is a new
     // addition; emit the appropriate signal
-    if (!services.contains(fqName)) {
+    if (!_services.contains(fqName)) {
         q->publish(ServiceAdded{service});
-    } else if(services.value(fqName) != service) {
+    } else if(_services.value(fqName) != service) {
         q->publish(ServiceUpdated{service});
     }
 
-    services.insert(fqName, service);
-    hostnames.insert(service.hostname());
+    _services.insert(fqName, service);
+    _hostnames.insert(service.hostname());
 
     return false;
 }
 
-void BrowserPrivate::onMessageReceived(const Message &message)
-{
+void BrowserPrivate::onMessageReceived(const Message& message) {
     if (!message.isResponse()) {
         return;
     }
-
-    const bool any = type == MdnsBrowseType;
 
     // Use a set to track all services that are updated in the message to
     // prevent unnecessary queries for SRV and TXT records
@@ -145,18 +136,14 @@ void BrowserPrivate::onMessageReceived(const Message &message)
 
         switch (record.type()) {
         case PTR:
-            if (any && record.name() == MdnsBrowseType) {
-                ptrTargets.insert(record.target());
-                serviceTimer.start();
-                cacheRecord = true;
-            } else if (any || record.name() == type) {
+            if (record.name() == _serviceType) {
                 updateNames.insert(record.target());
                 cacheRecord = true;
             }
             break;
         case SRV:
         case TXT:
-            if (any || record.name().endsWith("." + type)) {
+            if (record.name().endsWith("." + _serviceType)) {
                 updateNames.insert(record.name());
                 cacheRecord = true;
             }
@@ -187,7 +174,7 @@ void BrowserPrivate::onMessageReceived(const Message &message)
         switch (record.type()) {
             case A:
             case AAAA:
-                cacheRecord = hostnames.contains(record.name());
+                cacheRecord = _hostnames.contains(record.name());
                 break;
         }
         if (cacheRecord) {
@@ -243,10 +230,10 @@ void BrowserPrivate::onRecordExpired(const Record &record)
     default:
         return;
     }
-    Service service = services.value(serviceName);
+    Service service = _services.value(serviceName);
     if (!service.name().isNull()) {
         q->publish(ServiceRemoved{service});
-        services.remove(serviceName);
+        _services.remove(serviceName);
         updateHostnames();
     }
 }
@@ -254,7 +241,7 @@ void BrowserPrivate::onRecordExpired(const Record &record)
 void BrowserPrivate::onQueryTimeout()
 {
     Query query;
-    query.setName(type);
+    query.setName(_serviceType);
     query.setType(PTR);
     Message message;
     message.addQuery(query);
@@ -277,45 +264,11 @@ void BrowserPrivate::onQueryTimeout()
     queryTimer.start();
 }
 
-void BrowserPrivate::onServiceTimeout()
-{
-    if (ptrTargets.count()) {
-        Message message;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
-		for (const QByteArray &target : std::as_const(ptrTargets)) {
-#else
-		for (const QByteArray &target : qAsConst(ptrTargets)) {
-#endif
-            // Add a query for PTR records
-            Query query;
-            query.setName(target);
-            query.setType(PTR);
-            message.addQuery(query);
+void BrowserPrivate::updateHostnames() {
+    _hostnames.clear();
 
-            // Include PTR records for the target that are already known
-            QList<Record> records;
-            if (cache->lookupRecords(target, PTR, records)) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
-				for (const Record &record : std::as_const(records)) {
-#else
-				for (const Record &record : qAsConst(records)) {
-#endif
-                    message.addRecord(record);
-                }
-            }
-        }
-
-        server->sendMessageToAll(message);
-        ptrTargets.clear();
-    }
-}
-
-void BrowserPrivate::updateHostnames()
-{
-    hostnames.clear();
-
-    for (const auto& service : services) {
-        hostnames.insert(service.hostname());
+    for (const auto& service : _services) {
+        _hostnames.insert(service.hostname());
     }
 }
 

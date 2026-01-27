@@ -44,28 +44,24 @@ class Record;
 
 class BrowserPrivate {
 public:
-    explicit BrowserPrivate(Browser *browser, AbstractServer *server, const QByteArray &type, Cache *existingCache);
+    explicit BrowserPrivate(Browser *browser, AbstractServer *server, const QByteArray& serviceType, Cache *existingCache);
 
     bool updateService(const QByteArray &fqName);
 
     AbstractServer *server;
-    QByteArray type;
+    QByteArray _serviceType;
 
     Cache *cache;
-    QSet<QByteArray> ptrTargets;
-    QMap<QByteArray, Service> services;
-    QSet<QByteArray> hostnames;
+    QMap<QByteArray, Service> _services;
+    QSet<QByteArray> _hostnames;
 
     QTimer queryTimer;
-    QTimer serviceTimer;
 
 private:
     void onMessageReceived(const Message &message);
     void onShouldQuery(const Record &record);
     void onRecordExpired(const Record &record);
-
     void onQueryTimeout();
-    void onServiceTimeout();
 
     void updateHostnames();
 

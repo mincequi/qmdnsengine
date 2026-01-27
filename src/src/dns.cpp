@@ -35,7 +35,7 @@ namespace QMdnsEngine
 {
 
 template<class T>
-bool parseInteger(const QByteArray &packet, quint16 &offset, T &value)
+bool parseInteger(const QByteArray &packet, std::uint16_t &offset, T &value)
 {
     if (offset + sizeof(T) > static_cast<unsigned int>(packet.length())) {
         return false;  // out-of-bounds
@@ -46,20 +46,20 @@ bool parseInteger(const QByteArray &packet, quint16 &offset, T &value)
 }
 
 template<class T>
-void writeInteger(QByteArray &packet, quint16 &offset, T value)
+void writeInteger(QByteArray &packet, std::uint16_t &offset, T value)
 {
     value = qToBigEndian<T>(value);
     packet.append(reinterpret_cast<const char*>(&value), sizeof(T));
     offset += sizeof(T);
 }
 
-bool parseName(const QByteArray &packet, quint16 &offset, QByteArray &name)
+bool parseName(const QByteArray& packet, std::uint16_t &offset, QByteArray &name)
 {
-    quint16 offsetEnd = 0;
-    quint16 offsetPtr = offset;
+    std::uint16_t offsetEnd = 0;
+    std::uint16_t offsetPtr = offset;
     forever {
-        quint8 nBytes;
-        if (!parseInteger<quint8>(packet, offset, nBytes)) {
+        std::uint8_t nBytes;
+        if (!parseInteger<std::uint8_t>(packet, offset, nBytes)) {
             return false;
         }
         if (!nBytes) {
@@ -76,9 +76,9 @@ bool parseName(const QByteArray &packet, quint16 &offset, QByteArray &name)
             break;
         case 0xc0:
         {
-            quint8 nBytes2;
-            quint16 newOffset;
-            if (!parseInteger<quint8>(packet, offset, nBytes2)) {
+            std::uint8_t nBytes2;
+            std::uint16_t newOffset;
+            if (!parseInteger<std::uint8_t>(packet, offset, nBytes2)) {
                 return false;
             }
             newOffset = ((nBytes & ~0xc0) << 8) | nBytes2;
@@ -102,7 +102,7 @@ bool parseName(const QByteArray &packet, quint16 &offset, QByteArray &name)
     return true;
 }
 
-void writeName(QByteArray &packet, quint16 &offset, const QByteArray &name, QMap<QByteArray, quint16> &nameMap)
+void writeName(QByteArray &packet, std::uint16_t &offset, const QByteArray &name, QMap<QByteArray, std::uint16_t> &nameMap)
 {
     QByteArray fragment = name;
     if (fragment.endsWith('.')) {
@@ -110,7 +110,7 @@ void writeName(QByteArray &packet, quint16 &offset, const QByteArray &name, QMap
     }
     while (fragment.length()) {
         if (nameMap.contains(fragment)) {
-            writeInteger<quint16>(packet, offset, nameMap.value(fragment) | 0xc000);
+            writeInteger<std::uint16_t>(packet, offset, nameMap.value(fragment) | 0xc000);
             return;
         }
         nameMap.insert(fragment, offset);
@@ -118,24 +118,24 @@ void writeName(QByteArray &packet, quint16 &offset, const QByteArray &name, QMap
         if (index == -1) {
             index = fragment.length();
         }
-        writeInteger<quint8>(packet, offset, index);
+        writeInteger<std::uint8_t>(packet, offset, index);
         packet.append(fragment.left(index));
         offset += index;
         fragment.remove(0, index + 1);
     }
-    writeInteger<quint8>(packet, offset, 0);
+    writeInteger<std::uint8_t>(packet, offset, 0);
 }
 
-bool parseRecord(const QByteArray &packet, quint16 &offset, Record &record)
+bool parseRecord(const QByteArray &packet, std::uint16_t &offset, Record &record)
 {
     QByteArray name;
-    quint16 type, class_, dataLen;
+    std::uint16_t type, class_, dataLen;
     quint32 ttl;
     if (!parseName(packet, offset, name) ||
-            !parseInteger<quint16>(packet, offset, type) ||
-            !parseInteger<quint16>(packet, offset, class_) ||
+            !parseInteger<std::uint16_t>(packet, offset, type) ||
+            !parseInteger<std::uint16_t>(packet, offset, class_) ||
             !parseInteger<quint32>(packet, offset, ttl) ||
-            !parseInteger<quint16>(packet, offset, dataLen)) {
+            !parseInteger<std::uint16_t>(packet, offset, dataLen)) {
         return false;
     }
     record.setName(name);
@@ -158,7 +158,7 @@ bool parseRecord(const QByteArray &packet, quint16 &offset, Record &record)
             return false;
         }
         record.setAddress(QHostAddress(
-            reinterpret_cast<const quint8*>(packet.constData() + offset)
+            reinterpret_cast<const std::uint8_t*>(packet.constData() + offset)
         ));
         offset += 16;
         break;
@@ -166,17 +166,17 @@ bool parseRecord(const QByteArray &packet, quint16 &offset, Record &record)
     case NSEC:
     {
         QByteArray nextDomainName;
-        quint8 number;
-        quint8 length;
+        std::uint8_t number;
+        std::uint8_t length;
         if (!parseName(packet, offset, nextDomainName) ||
-                !parseInteger<quint8>(packet, offset, number) ||
-                !parseInteger<quint8>(packet, offset, length) ||
+                !parseInteger<std::uint8_t>(packet, offset, number) ||
+                !parseInteger<std::uint8_t>(packet, offset, length) ||
                 number != 0 ||
                 offset + length > packet.length()) {
             return false;
         }
         Bitmap bitmap;
-        bitmap.setData(length, reinterpret_cast<const quint8*>(packet.constData() + offset));
+        bitmap.setData(length, reinterpret_cast<const std::uint8_t*>(packet.constData() + offset));
         record.setNextDomainName(nextDomainName);
         record.setBitmap(bitmap);
         offset += length;
@@ -193,11 +193,11 @@ bool parseRecord(const QByteArray &packet, quint16 &offset, Record &record)
     }
     case SRV:
     {
-        quint16 priority, weight, port;
+        std::uint16_t priority, weight, port;
         QByteArray target;
-        if (!parseInteger<quint16>(packet, offset, priority) ||
-                !parseInteger<quint16>(packet, offset, weight) ||
-                !parseInteger<quint16>(packet, offset, port) ||
+        if (!parseInteger<std::uint16_t>(packet, offset, priority) ||
+                !parseInteger<std::uint16_t>(packet, offset, weight) ||
+                !parseInteger<std::uint16_t>(packet, offset, port) ||
                 !parseName(packet, offset, target)) {
             return false;
         }
@@ -209,10 +209,10 @@ bool parseRecord(const QByteArray &packet, quint16 &offset, Record &record)
     }
     case TXT:
     {
-        quint16 start = offset;
+        std::uint16_t start = offset;
         while (offset < start + dataLen) {
-            quint8 nBytes;
-            if (!parseInteger<quint8>(packet, offset, nBytes) ||
+            std::uint8_t nBytes;
+            if (!parseInteger<std::uint8_t>(packet, offset, nBytes) ||
                     offset + nBytes > packet.length()) {
                 return false;
             }
@@ -237,11 +237,11 @@ bool parseRecord(const QByteArray &packet, quint16 &offset, Record &record)
     return true;
 }
 
-void writeRecord(QByteArray &packet, quint16 &offset, Record &record, QMap<QByteArray, quint16> &nameMap)
+void writeRecord(QByteArray &packet, std::uint16_t &offset, Record &record, QMap<QByteArray, std::uint16_t> &nameMap)
 {
     writeName(packet, offset, record.name(), nameMap);
-    writeInteger<quint16>(packet, offset, record.type());
-    writeInteger<quint16>(packet, offset, record.flushCache() ? 0x8001 : 1);
+    writeInteger<std::uint16_t>(packet, offset, record.type());
+    writeInteger<std::uint16_t>(packet, offset, record.flushCache() ? 0x8001 : 1);
     writeInteger<quint32>(packet, offset, record.ttl());
     offset += 2;
     QByteArray data;
@@ -258,10 +258,10 @@ void writeRecord(QByteArray &packet, quint16 &offset, Record &record, QMap<QByte
     }
     case NSEC:
     {
-        quint8 length = record.bitmap().length();
+        std::uint8_t length = record.bitmap().length();
         writeName(data, offset, record.nextDomainName(), nameMap);
-        writeInteger<quint8>(data, offset, 0);
-        writeInteger<quint8>(data, offset, length);
+        writeInteger<std::uint8_t>(data, offset, 0);
+        writeInteger<std::uint8_t>(data, offset, length);
         data.append(reinterpret_cast<const char*>(record.bitmap().data()), length);
         offset += length;
         break;
@@ -270,19 +270,19 @@ void writeRecord(QByteArray &packet, quint16 &offset, Record &record, QMap<QByte
         writeName(data, offset, record.target(), nameMap);
         break;
     case SRV:
-        writeInteger<quint16>(data, offset, record.priority());
-        writeInteger<quint16>(data, offset, record.weight());
-        writeInteger<quint16>(data, offset, record.port());
+        writeInteger<std::uint16_t>(data, offset, record.priority());
+        writeInteger<std::uint16_t>(data, offset, record.weight());
+        writeInteger<std::uint16_t>(data, offset, record.port());
         writeName(data, offset, record.target(), nameMap);
         break;
     case TXT:
         if (!record.attributes().count()) {
-            writeInteger<quint8>(data, offset, 0);
+            writeInteger<std::uint8_t>(data, offset, 0);
             break;
         }
         for (auto i = record.attributes().constBegin(); i != record.attributes().constEnd(); ++i) {
             QByteArray entry = i.value().isNull() ? i.key() : i.key() + "=" + i.value();
-            writeInteger<quint8>(data, offset, entry.length());
+            writeInteger<std::uint8_t>(data, offset, entry.length());
             data.append(entry);
             offset += entry.length();
         }
@@ -291,32 +291,38 @@ void writeRecord(QByteArray &packet, quint16 &offset, Record &record, QMap<QByte
         break;
     }
     offset -= 2;
-    writeInteger<quint16>(packet, offset, data.length());
+    writeInteger<std::uint16_t>(packet, offset, data.length());
     packet.append(data);
 }
 
-bool fromPacket(const QByteArray &packet, Message &message)
-{
-    quint16 offset = 0;
-    quint16 transactionId, flags, nQuestion, nAnswer, nAuthority, nAdditional;
-    if (!parseInteger<quint16>(packet, offset, transactionId) ||
-            !parseInteger<quint16>(packet, offset, flags) ||
-            !parseInteger<quint16>(packet, offset, nQuestion) ||
-            !parseInteger<quint16>(packet, offset, nAnswer) ||
-            !parseInteger<quint16>(packet, offset, nAuthority) ||
-            !parseInteger<quint16>(packet, offset, nAdditional)) {
-        return false;
+std::optional<Message> fromPacket(const QByteArray &packet, const QHostAddress& address, std::uint16_t port) {
+    if (packet.size() < 12) {
+        return {};
     }
+
+    std::uint16_t transactionId = ntohs(*(uint16_t*)(packet.data()));
+    std::uint16_t flags = ntohs(*(uint16_t*)(packet.data() + 2));
+    Message message;
     message.setTransactionId(transactionId);
     message.setResponse(flags & 0x8400);
     message.setTruncated(flags & 0x0200);
-    for (int i = 0; i < nQuestion; ++i) {
+
+    std::uint16_t questionCount = ntohs(*(uint16_t*)(packet.data() + 4));
+    std::uint16_t answerCount = ntohs(*(uint16_t*)(packet.data() + 6));
+    std::uint16_t authorityCount = ntohs(*(uint16_t*)(packet.data() + 8));
+    std::uint16_t additionalCount = ntohs(*(uint16_t*)(packet.data() + 10));
+
+    std::uint16_t offset = 12;
+
+
+
+    for (int i = 0; i < questionCount; ++i) {
         QByteArray name;
-        quint16 type, class_;
+        std::uint16_t type, class_;
         if (!parseName(packet, offset, name) ||
-                !parseInteger<quint16>(packet, offset, type) ||
-                !parseInteger<quint16>(packet, offset, class_)) {
-            return false;
+            !parseInteger<std::uint16_t>(packet, offset, type) ||
+            !parseInteger<std::uint16_t>(packet, offset, class_)) {
+            return {};
         }
         Query query;
         query.setName(name);
@@ -324,34 +330,38 @@ bool fromPacket(const QByteArray &packet, Message &message)
         query.setUnicastResponse(class_ & 0x8000);
         message.addQuery(query);
     }
-    quint16 nRecord = nAnswer + nAuthority + nAdditional;
+    std::uint16_t nRecord = answerCount + authorityCount + additionalCount;
     for (int i = 0; i < nRecord; ++i) {
         Record record;
         if (!parseRecord(packet, offset, record)) {
-            return false;
+            return {};
         }
         message.addRecord(record);
     }
-    return true;
+
+    message.setAddress(address);
+    message.setPort(port);
+
+    return message;
 }
 
 void toPacket(const Message &message, QByteArray &packet)
 {
-    quint16 offset = 0;
-    quint16 flags = (message.isResponse() ? 0x8400 : 0) |
+    std::uint16_t offset = 0;
+    std::uint16_t flags = (message.isResponse() ? 0x8400 : 0) |
         (message.isTruncated() ? 0x200 : 0);
-    writeInteger<quint16>(packet, offset, message.transactionId());
-    writeInteger<quint16>(packet, offset, flags);
-    writeInteger<quint16>(packet, offset, message.queries().length());
-    writeInteger<quint16>(packet, offset, message.records().length());
-    writeInteger<quint16>(packet, offset, 0);
-    writeInteger<quint16>(packet, offset, 0);
-    QMap<QByteArray, quint16> nameMap;
+    writeInteger<std::uint16_t>(packet, offset, message.transactionId());
+    writeInteger<std::uint16_t>(packet, offset, flags);
+    writeInteger<std::uint16_t>(packet, offset, message.queries().size());
+    writeInteger<std::uint16_t>(packet, offset, message.records().size());
+    writeInteger<std::uint16_t>(packet, offset, 0);
+    writeInteger<std::uint16_t>(packet, offset, 0);
+    QMap<QByteArray, std::uint16_t> nameMap;
     const auto queries = message.queries();
     for (const Query &query : queries) {
         writeName(packet, offset, query.name(), nameMap);
-        writeInteger<quint16>(packet, offset, query.type());
-        writeInteger<quint16>(packet, offset, query.unicastResponse() ? 0x8001 : 1);
+        writeInteger<std::uint16_t>(packet, offset, query.type());
+        writeInteger<std::uint16_t>(packet, offset, query.unicastResponse() ? 0x8001 : 1);
     }
     const auto records = message.records();
     for (Record record : records) {
@@ -359,7 +369,7 @@ void toPacket(const Message &message, QByteArray &packet)
     }
 }
 
-QString typeName(quint16 type)
+QString typeName(std::uint16_t type)
 {
     switch (type) {
     case A:    return "A";

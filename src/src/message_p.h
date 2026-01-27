@@ -25,6 +25,7 @@
 #ifndef QMDNSENGINE_MESSAGE_P_H
 #define QMDNSENGINE_MESSAGE_P_H
 
+#include <list>
 #include <QHostAddress>
 #include <QList>
 
@@ -45,8 +46,8 @@ public:
     quint16 transactionId;
     bool isResponse;
     bool isTruncated;
-    QList<Query> queries;
-    QList<Record> records;
+    std::list<Query> queries;
+    std::list<Record> records;
 };
 
 }

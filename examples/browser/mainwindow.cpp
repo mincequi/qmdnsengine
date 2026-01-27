@@ -31,6 +31,7 @@
 #include <QPushButton>
 #include <QSplitter>
 #include <QTableWidget>
+#include <QTextEdit>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -43,13 +44,13 @@
 Q_DECLARE_METATYPE(QMdnsEngine::Service)
 
 MainWindow::MainWindow()
-    : mServiceModel(nullptr),
-      mResolver(nullptr)
+    : _log(new QTextEdit(tr("Initializing application"))),
+      _resolver(nullptr)
 {
     setWindowTitle(tr("mDNS Browser"));
     resize(640, 480);
 
-    _serviceType = new QLineEdit(tr("_http._tcp.local."));
+    _serviceType = new QLineEdit(tr("_shelly._tcp.local."));
     mStartStop = new QPushButton(tr("Browse"));
     mServices = new QListView;
     mAddresses = new QListWidget;
@@ -81,6 +82,8 @@ MainWindow::MainWindow()
     QHBoxLayout *servicesLayout = new QHBoxLayout;
     servicesLayout->addWidget(hSplitter);
     rootLayout->addLayout(servicesLayout);
+    // Add the log
+    rootLayout->addWidget(_log, 1);
 
     connect(any, &QCheckBox::toggled, this, &MainWindow::onToggled);
     connect(mStartStop, &QPushButton::clicked, this, &MainWindow::onClicked);
@@ -96,15 +99,15 @@ void MainWindow::onToggled(bool checked)
 
 void MainWindow::onClicked()
 {
-    if (mServiceModel) {
+    if (_serviceModel) {
         mServices->setModel(nullptr);
-        delete mServiceModel;
+        delete _serviceModel;
         mAttributes->clear();
         mAttributes->setColumnCount(0);
     }
 
-    mServiceModel = new ServiceModel(&_server, _serviceType->text().toUtf8());
-    mServices->setModel(mServiceModel);
+    _serviceModel = new ServiceModel(&_server, _serviceType->text().toUtf8());
+    mServices->setModel(_serviceModel);
 
     connect(mServices->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::onSelectionChanged);
 }
@@ -115,13 +118,13 @@ void MainWindow::onSelectionChanged(const QItemSelection &selected, const QItemS
     mAttributes->clear();
     mAttributes->setColumnCount(0);
 
-    if (mResolver) {
-        delete mResolver;
-        mResolver = nullptr;
+    if (_resolver) {
+        delete _resolver;
+        _resolver = nullptr;
     }
 
     if (selected.count()) {
-        auto service = mServiceModel->data(selected.at(0).topLeft(), Qt::UserRole).value<QMdnsEngine::Service>();
+        auto service = _serviceModel->data(selected.at(0).topLeft(), Qt::UserRole).value<QMdnsEngine::Service>();
 
         // Show TXT values
         auto attributes = service.attributes();
@@ -137,8 +140,8 @@ void MainWindow::onSelectionChanged(const QItemSelection &selected, const QItemS
         }
 
         // Resolve the address
-        mResolver = new QMdnsEngine::Resolver(&_server, service.hostname(), nullptr, this);
-        connect(mResolver, &QMdnsEngine::Resolver::resolved, [this](const QHostAddress &address) {
+        _resolver = new QMdnsEngine::Resolver(&_server, service.hostname(), nullptr, this);
+        connect(_resolver, &QMdnsEngine::Resolver::resolved, [this](const QHostAddress &address) {
             mAddresses->addItem(address.toString());
         });
     }

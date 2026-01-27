@@ -124,11 +124,9 @@ void ServerPrivate::onReadyRead()
     socket->readDatagram(packet.data(), packet.size(), &address, &port);
 
     // Attempt to decode the packet
-    Message message;
-    if (fromPacket(packet, message)) {
-        message.setAddress(address);
-        message.setPort(port);
-        q->publish(MessageReceived{message});
+    auto message = fromPacket(packet, address, port);
+    if (message) {
+        q->publish(MessageReceived{*message});
     }
 }
 

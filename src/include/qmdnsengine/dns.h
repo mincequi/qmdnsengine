@@ -26,6 +26,7 @@
 #define QMDNSENGINE_DNS_H
 
 #include <QByteArray>
+#include <QHostAddress>
 #include <QMap>
 
 #include "qmdnsengine_export.h"
@@ -63,7 +64,7 @@ enum {
  * The offset will be incremented by the number of bytes read. Name
  * compression requires access to the contents of the packet.
  */
-QMDNSENGINE_EXPORT bool parseName(const QByteArray &packet, quint16 &offset, QByteArray &name);
+QMDNSENGINE_EXPORT bool parseName(const QByteArray& packet, quint16 &offset, QByteArray &name);
 
 /**
  * @brief Write a name to a raw DNS packet
@@ -102,7 +103,8 @@ QMDNSENGINE_EXPORT void writeRecord(QByteArray &packet, quint16 &offset, Record 
  * @param message reference to Message to populate
  * @return true if no errors occurred
  */
-QMDNSENGINE_EXPORT bool fromPacket(const QByteArray &packet, Message &message);
+QMDNSENGINE_EXPORT std::optional<Message> fromPacket(const QByteArray &packet, const QHostAddress& address, std::uint16_t port);
+
 
 /**
  * @brief Create a raw DNS packet from a Message

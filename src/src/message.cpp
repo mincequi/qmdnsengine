@@ -111,24 +111,24 @@ void Message::setTruncated(bool isTruncated)
     d->isTruncated = isTruncated;
 }
 
-QList<Query> Message::queries() const
+std::list<Query> Message::queries() const
 {
     return d->queries;
 }
 
 void Message::addQuery(const Query &query)
 {
-    d->queries.append(query);
+    d->queries.push_back(query);
 }
 
-QList<Record> Message::records() const
+std::list<Record> Message::records() const
 {
     return d->records;
 }
 
 void Message::addRecord(const Record &record)
 {
-    d->records.append(record);
+    d->records.push_back(record);
 }
 
 void Message::reply(const Message &other)

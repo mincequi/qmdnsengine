@@ -60,7 +60,6 @@ class QMDNSENGINE_EXPORT MessagePrivate;
 class QMDNSENGINE_EXPORT Message
 {
 public:
-
     /**
      * @brief Create an empty message
      */
@@ -155,7 +154,7 @@ public:
     /**
      * @brief Retrieve a list of queries in the message
      */
-    QList<Query> queries() const;
+    std::list<Query> queries() const;
 
     /**
      * @brief Add a query to the message
@@ -165,7 +164,7 @@ public:
     /**
      * @brief Retrieve a list of records in the message
      */
-    QList<Record> records() const;
+    std::list<Record> records() const;
 
     /**
      * @brief Add a record to the message
