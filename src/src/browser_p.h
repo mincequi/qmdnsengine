@@ -61,7 +61,7 @@ private:
     void onMessageReceived(const Message &message);
     void onShouldQuery(const Record &record);
     void onRecordExpired(const Record &record);
-    void onQueryTimeout();
+    void sendQuery();
 
     void updateHostnames();
 

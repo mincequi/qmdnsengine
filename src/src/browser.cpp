@@ -54,14 +54,14 @@ BrowserPrivate::BrowserPrivate(Browser *browser, AbstractServer *server, const Q
     });
 
     queryTimer.callOnTimeout([this] {
-        onQueryTimeout();
+        sendQuery();
     });
 
     queryTimer.setInterval(60 * 1000);
     queryTimer.setSingleShot(true);
 
     // Immediately begin browsing for services
-    onQueryTimeout();
+    sendQuery();
 }
 
 // TODO: multiple SRV records not supported
@@ -156,15 +156,12 @@ void BrowserPrivate::onMessageReceived(const Message& message) {
 
     // For each of the services marked to be updated, perform the update and
     // make a list of all missing SRV records
-    QSet<QByteArray> queryNames;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
-	for (const QByteArray &name : std::as_const(updateNames)) {
+    for (const QByteArray &name : std::as_const(updateNames)) {
 #else
-	for (const QByteArray &name : qAsConst(updateNames)) {
+    for (const QByteArray &name : qAsConst(updateNames)) {
 #endif
-        if (updateService(name)) {
-            queryNames.insert(name);
-        }
+        updateService(name);
     }
 
     // Cache A / AAAA records after services are processed to ensure hostnames are known
@@ -180,24 +177,6 @@ void BrowserPrivate::onMessageReceived(const Message& message) {
         if (cacheRecord) {
             cache->addRecord(record);
         }
-    }
-
-    // Build and send a query for all of the SRV and TXT records
-    if (queryNames.count()) {
-        Message queryMessage;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
-		for (const QByteArray &name : std::as_const(queryNames)) {
-#else
-		for (const QByteArray &name : qAsConst(queryNames)) {
-#endif
-            Query query;
-            query.setName(name);
-            query.setType(SRV);
-            queryMessage.addQuery(query);
-            query.setType(TXT);
-            queryMessage.addQuery(query);
-        }
-        server->sendMessageToAll(queryMessage);
     }
 }
 
@@ -238,27 +217,12 @@ void BrowserPrivate::onRecordExpired(const Record &record)
     }
 }
 
-void BrowserPrivate::onQueryTimeout()
-{
+void BrowserPrivate::sendQuery() {
     Query query;
     query.setName(_serviceType);
-    query.setType(PTR);
+    query.setType(SRV);
     Message message;
     message.addQuery(query);
-
-    // TODO: including too many records could cause problems
-
-    // Include PTR records for the target that are already known
-    QList<Record> records;
-    if (cache->lookupRecords(query.name(), PTR, records)) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 6, 0))
-		for (const Record &record : std::as_const(records)) {
-#else
-		for (const Record &record : qAsConst(records)) {
-#endif
-            message.addRecord(record);
-        }
-    }
 
     server->sendMessageToAll(message);
     queryTimer.start();
